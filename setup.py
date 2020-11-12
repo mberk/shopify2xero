@@ -3,6 +3,11 @@ from setuptools import setup
 with open('README.md', 'r') as f:
     long_description = f.read()
 
+requires = [
+    'keyring',
+    'ShopifyAPI'
+]
+
 setup(
     name='shopify2xero',
     version='0.0.1',
@@ -13,6 +18,7 @@ setup(
     author_email='maurice@mauriceberk.com',
     url='https://github.com/mberk/shopify2xero',
     packages=['shopify2xero'],
+    requires=requires,
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
