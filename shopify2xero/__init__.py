@@ -4,9 +4,12 @@ from typing import List
 
 import keyring
 import shopify
+from xero_python.accounting import AccountingApi
+from xero_python.accounting.models.contacts import Contacts
 from xero_python.api_client import ApiClient
 from xero_python.api_client import Configuration
 from xero_python.api_client.oauth2 import OAuth2Token
+from xero_python.identity import IdentityApi
 
 SHOPIFY_API_VERSION = '2020-10'
 
@@ -53,3 +56,7 @@ class Shopify2Xero:
     def get_all_shopify_customers(self) -> List[shopify.Customer]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Customer.find(no_iter_next=False))
+
+    def get_all_xero_contacts(self) -> Contacts:
+        tenant_id = IdentityApi(self.xero_api_client).get_connections()[0].tenant_id
+        return AccountingApi(self.xero_api_client).get_contacts(xero_tenant_id=tenant_id)
