@@ -1,2 +1,10 @@
 # shopify2xero
-A Python package for exporting Shopify data and importing it to Xero. For example, export Shopify orders and import them as Xero invoices
+
+## Setup
+
+### Xero
+
+1. [Create a Xero App](https://github.com/XeroAPI/xero-python-oauth2-starter#create-a-xero-app)
+2. Use [xoauth](https://github.com/XeroAPI/xoauth) to configure and store credentials
+
+### Shopify
