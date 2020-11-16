@@ -154,6 +154,10 @@ class Shopify2Xero:
             invoices=Invoices(invoices=[new_invoice])
         )
 
+    def copy_orders(self, order_ids: List[int]) -> None:
+        for order_id in order_ids:
+            self.copy_order(order_id)
+
     def get_all_shopify_customers(self) -> List[shopify.Customer]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Customer.find(no_iter_next=False))
