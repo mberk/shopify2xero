@@ -7,6 +7,10 @@ import shopify
 from xero_python.accounting import AccountingApi
 from xero_python.accounting.models.contact import Contact
 from xero_python.accounting.models.contacts import Contacts
+from xero_python.accounting.models.invoice import Invoice
+from xero_python.accounting.models.invoices import Invoices
+from xero_python.accounting.models.item import Item
+from xero_python.accounting.models.line_item import LineItem
 from xero_python.api_client import ApiClient
 from xero_python.api_client import Configuration
 from xero_python.api_client.oauth2 import OAuth2Token
@@ -95,6 +99,9 @@ class Shopify2Xero:
 
     def get_all_xero_contacts(self) -> List[Contact]:
         return AccountingApi(self.xero_api_client).get_contacts(xero_tenant_id=self.xero_tenant_id).contacts
+
+    def get_all_xero_items(self) -> List[Item]:
+        return AccountingApi(self.xero_api_client).get_items(xero_tenant_id=self.xero_tenant_id).items
 
     def get_shopify_customer(self, customer_id: int) -> shopify.Customer:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
