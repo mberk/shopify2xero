@@ -1,7 +1,7 @@
 import datetime
 import json
 from pathlib import Path
-from typing import List
+from typing import Iterable, List, Optional
 
 import keyring
 import shopify
@@ -154,7 +154,7 @@ class Shopify2Xero:
             invoices=Invoices(invoices=[new_invoice])
         )
 
-    def copy_orders(self, order_ids: List[int]) -> None:
+    def copy_orders(self, order_ids: Iterable[int]) -> None:
         for order_id in order_ids:
             self.copy_order(order_id)
 
