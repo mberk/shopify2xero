@@ -53,9 +53,8 @@ class Shopify2Xero:
             json.dumps(xero_oauth2_token)
         )
 
-    def copy_customer(self, customer_id: int, update: bool = False):
-        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
-            customer = shopify.Customer.find(id_=customer_id)
+    def copy_customer(self, customer_id: int, update: bool = False) -> None:
+        customer = self.get_shopify_customer(customer_id)
 
         existing_contact = None
         if update:
@@ -96,3 +95,11 @@ class Shopify2Xero:
 
     def get_all_xero_contacts(self) -> List[Contact]:
         return AccountingApi(self.xero_api_client).get_contacts(xero_tenant_id=self.xero_tenant_id).contacts
+
+    def get_shopify_customer(self, customer_id: int) -> shopify.Customer:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return shopify.Customer.find(id_=customer_id)
+
+    def get_shopify_order(self, order_id: int) -> shopify.Order:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return shopify.Order.find(id_=order_id)
