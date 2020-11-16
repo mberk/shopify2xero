@@ -204,3 +204,14 @@ class Shopify2Xero:
     def get_shopify_payout_transactions(self, payout_id: int) -> List[Transaction]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(Transaction.find(payout_id=payout_id, no_iter_next=False))
+
+    def get_xero_invoice(self, invoice_number: str) -> Optional[Invoice]:
+        return next(
+            iter(
+                AccountingApi(self.xero_api_client).get_invoices(
+                    xero_tenant_id=self.xero_tenant_id,
+                    invoice_numbers=[invoice_number]
+                ).invoices
+            ),
+            None
+        )
