@@ -145,7 +145,8 @@ class Shopify2Xero:
             ],
             date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
             due_date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
-            invoice_number=f'INV-SHOPIFY-1{order.number}'
+            invoice_number=f'INV-SHOPIFY-1{order.number}',
+            status='AUTHORISED'
         )
 
         AccountingApi(self.xero_api_client).create_invoices(
