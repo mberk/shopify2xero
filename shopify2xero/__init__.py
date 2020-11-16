@@ -58,7 +58,7 @@ class Shopify2Xero:
             json.dumps(xero_oauth2_token)
         )
 
-    def copy_customer(self, customer_id: int, update: bool = False) -> None:
+    def copy_customer(self, customer_id: int, update: bool = False) -> Contact:
         customer = self.get_shopify_customer(customer_id)
 
         existing_contact = None
@@ -94,15 +94,24 @@ class Shopify2Xero:
                 contacts=Contacts(contacts=[new_contact])
             )
 
+        return new_contact
+
     def copy_order(self, order_id: int) -> None:
         order = self.get_shopify_order(order_id)
 
         variant_id_to_sku_map = {variant.id: variant.sku for variant in self.get_all_shopify_variants()}
 
-        contact = AccountingApi(self.xero_api_client).get_contacts(
-            xero_tenant_id=self.xero_tenant_id,
-            where=f'name="{order.customer.first_name} {order.customer.last_name}"'
-        ).contacts[0]
+        contact = next(
+            iter(
+                AccountingApi(self.xero_api_client).get_contacts(
+                    xero_tenant_id=self.xero_tenant_id,
+                    where=f'name="{order.customer.first_name} {order.customer.last_name}"'
+                )
+            ),
+            None
+        )
+        if contact is None:
+            contact = self.copy_customer(order.customer.id)
 
         new_invoice = Invoice(
             type='ACCREC',
