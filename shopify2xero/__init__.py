@@ -148,7 +148,7 @@ class Shopify2Xero:
 
     def get_all_shopify_orders(self) -> List[shopify.Order]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
-            return list(shopify.Order.find(no_iter_next=False))
+            return list(shopify.Order.find(no_iter_next=False, status='any'))
 
     def get_all_shopify_products(self) -> List[shopify.Product]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
