@@ -1,7 +1,8 @@
 import datetime
 import json
+import logging
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Iterable, List, NamedTuple, Optional
 
 import keyring
 import shopify
@@ -18,7 +19,15 @@ from xero_python.api_client import Configuration
 from xero_python.api_client.oauth2 import OAuth2Token
 from xero_python.identity import IdentityApi
 
+logger = logging.getLogger(__name__)
+
 SHOPIFY_API_VERSION = '2020-10'
+
+
+class PayoutSummary(NamedTuple):
+    payout_amount: float
+    order_numbers: List[int]
+    total_fees: float
 
 
 # As of 2020-11-16 these endpoints are not implemented by the shopify package but see
@@ -108,7 +117,13 @@ class Shopify2Xero:
         return new_contact
 
     def copy_order(self, order_id: int) -> None:
+        logger.debug(f'Copying order {order_id}')
         order = self.get_shopify_order(order_id)
+        invoice_number = f'INV-SHOPIFY-1{order.number}'
+        existing_invoice = self.get_xero_invoice(invoice_number)
+        if existing_invoice is not None:
+            logger.warning(f'Invoice {invoice_number} already exists')
+            return
 
         variant_id_to_sku_map = {variant.id: variant.sku for variant in self.get_all_shopify_variants()}
         for line_item in order.line_items:
@@ -145,7 +160,7 @@ class Shopify2Xero:
             ],
             date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
             due_date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
-            invoice_number=f'INV-SHOPIFY-1{order.number}',
+            invoice_number=invoice_number,
             status='AUTHORISED'
         )
 
@@ -153,15 +168,21 @@ class Shopify2Xero:
             xero_tenant_id=self.xero_tenant_id,
             invoices=Invoices(invoices=[new_invoice])
         )
+        logger.info(f'Created invoice {invoice_number}')
 
     def copy_orders(self, order_ids: Iterable[int]) -> None:
         for order_id in order_ids:
             self.copy_order(order_id)
 
-    def copy_all_orders_for_payout(self, payout_id: int) -> None:
+    def copy_all_orders_for_payout(self, payout_id: int) -> PayoutSummary:
         transactions = self.get_shopify_payout_transactions(payout_id)
-        order_ids = {t.source_order_id for t in transactions}
+        order_ids = {t.source_order_id for t in transactions if t.source_order_id is not None}
         self.copy_orders(order_ids)
+        return PayoutSummary(
+            payout_amount=-sum(float(t.amount) for t in transactions if t.type == 'payout'),
+            order_numbers=sorted(self.get_shopify_order(order_id).order_number for order_id in order_ids),
+            total_fees=sum(float(t.fee) for t in transactions)
+        )
 
     def get_all_shopify_customers(self) -> List[shopify.Customer]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
