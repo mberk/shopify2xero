@@ -5,6 +5,7 @@ from typing import List
 
 import keyring
 import shopify
+from shopify import mixins
 from xero_python.accounting import AccountingApi
 from xero_python.accounting.models.contact import Contact
 from xero_python.accounting.models.contacts import Contacts
@@ -18,6 +19,16 @@ from xero_python.api_client.oauth2 import OAuth2Token
 from xero_python.identity import IdentityApi
 
 SHOPIFY_API_VERSION = '2020-10'
+
+
+# As of 2020-11-16 these endpoints are not implemented by the shopify package but see
+# https://github.com/Shopify/shopify_python_api/pull/428
+class Payout(shopify.ShopifyResource, mixins.Metafields):
+    _prefix_source = '/shopify_payments/'
+
+
+class Transaction(shopify.ShopifyResource, mixins.Metafields):
+    _prefix_source = '/shopify_payments/balance/'
 
 
 class Shopify2Xero:
@@ -150,6 +161,10 @@ class Shopify2Xero:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Order.find(no_iter_next=False, status='any'))
 
+    def get_all_shopify_payouts(self) -> List[Payout]:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return list(Payout.find(no_iter_next=False))
+
     def get_all_shopify_products(self) -> List[shopify.Product]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Product.find(no_iter_next=False))
@@ -175,3 +190,7 @@ class Shopify2Xero:
     def get_shopify_variant(self, variant_id: int) -> shopify.Variant:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return shopify.Variant.find(id_=variant_id)
+
+    def get_shopify_payout_transactions(self, payout_id: int) -> List[Transaction]:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return list(Transaction.find(payout_id=payout_id, no_iter_next=False))
