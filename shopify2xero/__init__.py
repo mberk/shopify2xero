@@ -109,11 +109,11 @@ class Shopify2Xero:
 
     def copy_order(self, order_id: int) -> None:
         order = self.get_shopify_order(order_id)
-        for line_item in order.line_items:
-            if line_item.sku == '':
-                raise ValueError(f'SKU must be set in Shopify for {line_item.name}')
 
         variant_id_to_sku_map = {variant.id: variant.sku for variant in self.get_all_shopify_variants()}
+        for line_item in order.line_items:
+            if variant_id_to_sku_map[line_item.variant_id] == '':
+                raise ValueError(f'SKU must be set in Shopify for {line_item.name}')
 
         contact = next(
             iter(
