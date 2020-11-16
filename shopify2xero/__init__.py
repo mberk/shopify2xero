@@ -118,3 +118,7 @@ class Shopify2Xero:
     def get_shopify_order(self, order_id: int) -> shopify.Order:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return shopify.Order.find(id_=order_id)
+
+    def get_shopify_variant(self, variant_id: int) -> shopify.Variant:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return shopify.Variant.find(id_=variant_id)
