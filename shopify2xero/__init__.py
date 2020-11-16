@@ -5,6 +5,7 @@ from typing import List
 import keyring
 import shopify
 from xero_python.accounting import AccountingApi
+from xero_python.accounting.models.contact import Contact
 from xero_python.accounting.models.contacts import Contacts
 from xero_python.api_client import ApiClient
 from xero_python.api_client import Configuration
@@ -36,6 +37,8 @@ class Shopify2Xero:
             oauth2_token_getter=self.get_xero_oauth2_token
         )
 
+        self.xero_tenant_id = IdentityApi(self.xero_api_client).get_connections()[0].tenant_id
+
     def get_xero_oauth2_token(self) -> dict:
         token = json.loads(
             keyring.get_password('com.xero.xoauth', f'{self.xoauth_connection_name}:token_set')
@@ -50,13 +53,46 @@ class Shopify2Xero:
             json.dumps(xero_oauth2_token)
         )
 
-    def copy_customer(self):
-        pass
+    def copy_customer(self, customer_id: int, update: bool = False):
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            customer = shopify.Customer.find(id_=customer_id)
+
+        existing_contact = None
+        if update:
+            existing_contact = next(
+                iter(
+                    AccountingApi(self.xero_api_client).get_contacts(
+                        xero_tenant_id=self.xero_tenant_id,
+                        where=f'name="{customer.first_name} {customer.last_name}"'
+                    ).contacts
+                ),
+                None
+            )
+
+        new_contact = Contact(
+            name=f'{customer.first_name} {customer.last_name}',
+            first_name=customer.first_name,
+            last_name=customer.last_name,
+            email_address=customer.email,
+            is_customer=True,
+            contact_number=str(customer_id)
+        )
+
+        if existing_contact is not None:
+            AccountingApi(self.xero_api_client).update_contact(
+                xero_tenant_id=self.xero_tenant_id,
+                contact_id=existing_contact.contact_id,
+                contacts=Contacts(contacts=[new_contact])
+            )
+        else:
+            AccountingApi(self.xero_api_client).create_contacts(
+                xero_tenant_id=self.xero_tenant_id,
+                contacts=Contacts(contacts=[new_contact])
+            )
 
     def get_all_shopify_customers(self) -> List[shopify.Customer]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Customer.find(no_iter_next=False))
 
-    def get_all_xero_contacts(self) -> Contacts:
-        tenant_id = IdentityApi(self.xero_api_client).get_connections()[0].tenant_id
-        return AccountingApi(self.xero_api_client).get_contacts(xero_tenant_id=tenant_id)
+    def get_all_xero_contacts(self) -> List[Contact]:
+        return AccountingApi(self.xero_api_client).get_contacts(xero_tenant_id=self.xero_tenant_id).contacts
