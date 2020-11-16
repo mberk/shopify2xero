@@ -106,7 +106,7 @@ class Shopify2Xero:
                 AccountingApi(self.xero_api_client).get_contacts(
                     xero_tenant_id=self.xero_tenant_id,
                     where=f'name="{order.customer.first_name} {order.customer.last_name}"'
-                )
+                ).contacts
             ),
             None
         )
