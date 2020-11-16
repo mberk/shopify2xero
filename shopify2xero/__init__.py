@@ -1,3 +1,4 @@
+import datetime
 import json
 from pathlib import Path
 from typing import List
@@ -92,6 +93,42 @@ class Shopify2Xero:
                 xero_tenant_id=self.xero_tenant_id,
                 contacts=Contacts(contacts=[new_contact])
             )
+
+    def copy_order(self, order_id: int) -> None:
+        order = self.get_shopify_order(order_id)
+
+        variant_id_to_sku_map = {variant.id: variant.sku for variant in self.get_all_shopify_variants()}
+
+        contact = AccountingApi(self.xero_api_client).get_contacts(
+            xero_tenant_id=self.xero_tenant_id,
+            where=f'name="{order.customer.first_name} {order.customer.last_name}"'
+        ).contacts[0]
+
+        new_invoice = Invoice(
+            type='ACCREC',
+            contact=contact,
+            line_items=[
+                # TODO: Handle taxes
+                LineItem(
+                    item_code=variant_id_to_sku_map[line_item.variant_id],
+                    quantity=line_item.quantity,
+                    unit_amount=line_item.price,
+                )
+                for line_item in order.line_items
+            ] + [
+                # TODO: Configure account code
+                LineItem(description='Postage', quantity=1, unit_amount=shipping_line.price, account_code='425')
+                for shipping_line in order.shipping_lines
+            ],
+            date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
+            due_date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
+            invoice_number=f'INV-SHOPIFY-1{order.number}'
+        )
+
+        AccountingApi(self.xero_api_client).create_invoices(
+            xero_tenant_id=self.xero_tenant_id,
+            invoices=Invoices(invoices=[new_invoice])
+        )
 
     def get_all_shopify_customers(self) -> List[shopify.Customer]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
