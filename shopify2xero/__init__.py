@@ -101,6 +101,10 @@ class Shopify2Xero:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Order.find(no_iter_next=False))
 
+    def get_all_shopify_products(self) -> List[shopify.Product]:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return list(shopify.Product.find(no_iter_next=False))
+
     def get_all_xero_contacts(self) -> List[Contact]:
         return AccountingApi(self.xero_api_client).get_contacts(xero_tenant_id=self.xero_tenant_id).contacts
 
