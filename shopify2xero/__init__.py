@@ -158,6 +158,11 @@ class Shopify2Xero:
         for order_id in order_ids:
             self.copy_order(order_id)
 
+    def copy_all_orders_for_payout(self, payout_id: int) -> None:
+        transactions = self.get_shopify_payout_transactions(payout_id)
+        order_ids = {t.source_order_id for t in transactions}
+        self.copy_orders(order_ids)
+
     def get_all_shopify_customers(self) -> List[shopify.Customer]:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return list(shopify.Customer.find(no_iter_next=False))
