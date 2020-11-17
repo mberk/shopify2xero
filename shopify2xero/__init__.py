@@ -120,7 +120,7 @@ class Shopify2Xero:
     def copy_order(self, order_id: int) -> None:
         logger.debug(f'Copying order {order_id}')
         order = self.get_shopify_order(order_id)
-        invoice_number = f'INV-SHOPIFY-1{order.number}'
+        invoice_number = f'INV-SHOPIFY-{order.order_number}'
         existing_invoice = self.get_xero_invoice(invoice_number)
         if existing_invoice is not None:
             logger.warning(f'Invoice {invoice_number} already exists')
