@@ -159,8 +159,14 @@ class Shopify2Xero:
                 LineItem(description='Postage', quantity=1, unit_amount=shipping_line.price, account_code='425')
                 for shipping_line in order.shipping_lines
             ],
-            date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
-            due_date=datetime.datetime.strptime(order.processed_at, '%Y-%m-%dT%H:%M:%S+00:00'),
+            date=datetime.datetime.strptime(
+                order.processed_at[:-3] + order.processed_at[-2:],
+                '%Y-%m-%dT%H:%M:%S%z'
+            ),
+            due_date=datetime.datetime.strptime(
+                order.processed_at[:-3] + order.processed_at[-2:],
+                '%Y-%m-%dT%H:%M:%S%z'
+            ),
             invoice_number=invoice_number,
             status='AUTHORISED'
         )
