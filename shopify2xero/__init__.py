@@ -88,7 +88,7 @@ class Shopify2Xero:
                 iter(
                     AccountingApi(self.xero_api_client).get_contacts(
                         xero_tenant_id=self.xero_tenant_id,
-                        where=f'name="{customer.first_name} {customer.last_name}"'
+                        where=f'name="{customer.first_name.strip()} {customer.last_name.strip()}"'
                     ).contacts
                 ),
                 None
@@ -135,7 +135,7 @@ class Shopify2Xero:
             iter(
                 AccountingApi(self.xero_api_client).get_contacts(
                     xero_tenant_id=self.xero_tenant_id,
-                    where=f'name="{order.customer.first_name} {order.customer.last_name}"'
+                    where=f'name="{order.customer.first_name.strip()} {order.customer.last_name.strip()}"'
                 ).contacts
             ),
             None
