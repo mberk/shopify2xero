@@ -25,6 +25,7 @@ SHOPIFY_API_VERSION = '2020-10'
 
 
 class PayoutSummary(NamedTuple):
+    date: str
     payout_amount: float
     order_numbers: List[int]
     total_fees: float
@@ -179,7 +180,8 @@ class Shopify2Xero:
         order_ids = {t.source_order_id for t in transactions if t.source_order_id is not None}
         self.copy_orders(order_ids)
         return PayoutSummary(
-            payout_amount=-sum(float(t.amount) for t in transactions if t.type == 'payout'),
+            date=payout.date,
+            payout_amount=payout.amount,
             order_numbers=sorted(self.get_shopify_order(order_id).order_number for order_id in order_ids),
             total_fees=sum(float(t.fee) for t in transactions)
         )
