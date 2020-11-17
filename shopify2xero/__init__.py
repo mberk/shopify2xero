@@ -218,6 +218,15 @@ class Shopify2Xero:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return shopify.Order.find(id_=order_id)
 
+    def get_shopify_payout_by_date(self, date: str) -> Payout:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            payouts = Payout.find(no_iter_next=False, date=date)
+
+        if len(payouts) == 1:
+            return payouts[0]
+        else:
+            raise ValueError(f'Unexpected number of payouts found on {date}: {len(payouts)}')
+
     def get_shopify_variant(self, variant_id: int) -> shopify.Variant:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return shopify.Variant.find(id_=variant_id)
