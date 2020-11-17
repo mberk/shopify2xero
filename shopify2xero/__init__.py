@@ -175,8 +175,19 @@ class Shopify2Xero:
         for order_id in order_ids:
             self.copy_order(order_id)
 
-    def copy_all_orders_for_payout(self, payout_id: int) -> PayoutSummary:
-        transactions = self.get_shopify_payout_transactions(payout_id)
+    def copy_all_orders_for_payout(
+            self,
+            payout_id: Optional[int] = None,
+            payout_date: Optional[str] = None) -> PayoutSummary:
+        if (payout_id is None) == (payout_date is None):
+            raise ValueError('Exactly one of `payout_id` and `payout_date` must be provided')
+
+        if payout_id is None:
+            payout = self.get_shopify_payout_by_date(payout_date)
+        else:
+            payout = self.get_shopify_payout(payout_id)
+
+        transactions = self.get_shopify_payout_transactions(payout.id)
         order_ids = {t.source_order_id for t in transactions if t.source_order_id is not None}
         self.copy_orders(order_ids)
         return PayoutSummary(
@@ -219,6 +230,10 @@ class Shopify2Xero:
     def get_shopify_order(self, order_id: int) -> shopify.Order:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
             return shopify.Order.find(id_=order_id)
+
+    def get_shopify_payout(self, payout_id: int) -> Payout:
+        with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
+            return Payout.find(id_=payout_id)
 
     def get_shopify_payout_by_date(self, date: str) -> Payout:
         with shopify.Session.temp(domain=self.shopify_shop_url, version=SHOPIFY_API_VERSION, token=self.shopify_access_token):
