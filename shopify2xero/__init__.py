@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 from pathlib import Path
-from typing import Iterable, List, NamedTuple, Optional
+from typing import Dict, Iterable, List, NamedTuple, Optional
 
 import keyring
 import shopify
@@ -117,7 +117,17 @@ class Shopify2Xero:
 
         return new_contact
 
-    def copy_order(self, order_id: int) -> None:
+    def copy_order(self, order_id: int, deleted_products_map: Optional[Dict[str, str]] = None) -> None:
+        """
+        Create a Xero invoice from a Shopify order
+        :param order_id: The Shopify order ID corresponding to the order to copy
+        :param deleted_products_map: An explicit map from Shopify product name to Xero item code to allow for products
+        that have been deleted from Shopify
+        :return: Nothing
+        """
+        if deleted_products_map is None:
+            deleted_products_map = {}
+
         logger.debug(f'Copying order {order_id}')
         order = self.get_shopify_order(order_id)
         invoice_number = f'INV-SHOPIFY-{order.order_number}'
@@ -128,7 +138,13 @@ class Shopify2Xero:
 
         variant_id_to_sku_map = {variant.id: variant.sku for variant in self.get_all_shopify_variants()}
         for line_item in order.line_items:
-            if variant_id_to_sku_map[line_item.variant_id] == '':
+            if line_item.variant_id is None:
+                # A deleted product
+                if line_item.name not in deleted_products_map:
+                    raise ValueError(
+                        f'Product `{line_item.name}` appears to have been deleted but is not in deleted_products_map'
+                    )
+            elif variant_id_to_sku_map[line_item.variant_id] == '':
                 raise ValueError(f'SKU must be set in Shopify for {line_item.name}')
 
         contact = next(
@@ -149,7 +165,7 @@ class Shopify2Xero:
             line_items=[
                 # TODO: Handle taxes
                 LineItem(
-                    item_code=variant_id_to_sku_map[line_item.variant_id],
+                    item_code=variant_id_to_sku_map.get(line_item.variant_id, deleted_products_map.get(line_item.name)),
                     quantity=line_item.quantity,
                     unit_amount=line_item.price,
                 )
@@ -177,14 +193,15 @@ class Shopify2Xero:
         )
         logger.info(f'Created invoice {invoice_number}')
 
-    def copy_orders(self, order_ids: Iterable[int]) -> None:
+    def copy_orders(self, order_ids: Iterable[int], **kwargs) -> None:
         for order_id in order_ids:
-            self.copy_order(order_id)
+            self.copy_order(order_id, **kwargs)
 
     def copy_all_orders_for_payout(
             self,
             payout_id: Optional[int] = None,
-            payout_date: Optional[str] = None) -> PayoutSummary:
+            payout_date: Optional[str] = None,
+            **kwargs) -> PayoutSummary:
         if (payout_id is None) == (payout_date is None):
             raise ValueError('Exactly one of `payout_id` and `payout_date` must be provided')
 
@@ -195,7 +212,7 @@ class Shopify2Xero:
 
         transactions = self.get_shopify_payout_transactions(payout.id)
         order_ids = {t.source_order_id for t in transactions if t.source_order_id is not None}
-        self.copy_orders(order_ids)
+        self.copy_orders(order_ids, **kwargs)
         return PayoutSummary(
             date=payout.date,
             payout_amount=payout.amount,
