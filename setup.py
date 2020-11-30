@@ -18,7 +18,7 @@ setup(
     author_email='maurice@mauriceberk.com',
     url='https://github.com/mberk/shopify2xero',
     packages=['shopify2xero'],
-    requires=requires,
+    install_requires=requires,
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
