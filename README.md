@@ -16,8 +16,8 @@
 
 ### Reconciling a Shopify payout in Xero
 
-**Before proceeding please see the [Known Issues](#known-issues). In particular, proceed with caution if your Shopify payout
-includes refunds and/or your Shopify orders contain discounts**
+**Before proceeding please see the [Known Issues](#known-issues). In particular, proceed with caution if your Shopify
+payout includes refunds and/or your Shopify orders contain discounts**
 
 Scenario:
 
@@ -71,7 +71,7 @@ this payout
 
 ## Known Issues
 
-* Shopify discounts are not handled at all
+* Handling Shopify discounts has not been thoroughly tested
 * Refunds are not handled very well
 * Shipping account code is hardcoded to `425`
 * Taxes are probably not handled very well
