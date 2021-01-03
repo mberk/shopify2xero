@@ -1,4 +1,5 @@
 import datetime
+import itertools
 import json
 import logging
 from pathlib import Path
@@ -159,6 +160,9 @@ class Shopify2Xero:
         if contact is None:
             contact = self.copy_customer(order.customer.id)
 
+        if any(line_item.discount_allocations for line_item in itertools.chain(order.line_items, order.shipping_lines)):
+            logger.debug(f'Order {order_id} ({order.order_number}) has discounts')
+
         new_invoice = Invoice(
             type='ACCREC',
             contact=contact,
@@ -168,11 +172,22 @@ class Shopify2Xero:
                     item_code=variant_id_to_sku_map.get(line_item.variant_id, deleted_products_map.get(line_item.name)),
                     quantity=line_item.quantity,
                     unit_amount=line_item.price,
+                    discount_amount=sum(
+                        float(discount_allocation.amount) for discount_allocation in line_item.discount_allocations
+                    )
                 )
                 for line_item in order.line_items
             ] + [
                 # TODO: Configure account code
-                LineItem(description='Postage', quantity=1, unit_amount=shipping_line.price, account_code='425')
+                LineItem(
+                    description='Postage',
+                    quantity=1,
+                    unit_amount=shipping_line.price,
+                    account_code='425',
+                    discount_amount=sum(
+                        float(discount_allocation.amount) for discount_allocation in shipping_line.discount_allocations
+                    )
+                )
                 for shipping_line in order.shipping_lines
             ],
             date=datetime.datetime.strptime(
