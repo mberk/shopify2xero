@@ -43,10 +43,16 @@ class Transaction(shopify.ShopifyResource, mixins.Metafields):
 
 
 class Shopify2Xero:
-    def __init__(self, xoauth_connection_name: str, shopify_shop_url: str, shopify_access_token: str):
+    def __init__(
+            self,
+            xoauth_connection_name: str,
+            shopify_shop_url: str,
+            shopify_access_token: str,
+            customer_shipping_account_code: int):
         self.xoauth_connection_name = xoauth_connection_name
         self.shopify_shop_url = shopify_shop_url
         self.shopify_access_token = shopify_access_token
+        self.customer_shipping_account_code = customer_shipping_account_code
 
         with open(Path.home() / '.xoauth' / 'xoauth.json', 'r') as f:
             xoauth_config = json.load(f)
@@ -178,12 +184,11 @@ class Shopify2Xero:
                 )
                 for line_item in order.line_items
             ] + [
-                # TODO: Configure account code
                 LineItem(
                     description='Postage',
                     quantity=1,
                     unit_amount=shipping_line.price,
-                    account_code='425',
+                    account_code=self.customer_shipping_account_code,
                     discount_amount=sum(
                         float(discount_allocation.amount) for discount_allocation in shipping_line.discount_allocations
                     )
