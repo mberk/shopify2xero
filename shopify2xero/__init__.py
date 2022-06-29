@@ -22,7 +22,7 @@ from xero_python.identity import IdentityApi
 
 logger = logging.getLogger(__name__)
 
-SHOPIFY_API_VERSION = '2020-10'
+SHOPIFY_API_VERSION = '2021-10'
 
 
 class PayoutSummary(NamedTuple):
